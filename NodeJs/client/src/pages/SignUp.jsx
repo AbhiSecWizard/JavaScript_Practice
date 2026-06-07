@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const Login = () => {
+const SignUp = () => {
   const [input, setInput] = useState({
+    username: "",
     email: "",
     password: "",
   });
@@ -17,7 +18,6 @@ const Login = () => {
       ...val,
       [name]: value,
     }));
-    // Clear error message when user starts typing again
     if (errorMessage) setErrorMessage("");
   }
 
@@ -27,19 +27,13 @@ const Login = () => {
     setErrorMessage("");
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}api/v1/loginUser`,
-        input,
-        {
-          withCredentials: true,
-        }
-      );
-
-      console.log(response.data);
-      navigate("/product");
+      await axios.post(`${import.meta.env.VITE_API_URL}api/v1/createuser`, input);
+      
+      // Account create hone ke baad user ko clean workflow ke liye login screen par bhejna best practice hai
+      navigate("/login");
     } catch (error) {
-      console.error(error.response?.status);
-      const backendError = error.response?.data?.message || "Something went wrong. Please try again.";
+      console.error("Error from frontend of the signup page", error);
+      const backendError = error.response?.data?.message || "Registration failed. Please try again.";
       setErrorMessage(backendError);
     } finally {
       setIsLoading(false);
@@ -56,10 +50,10 @@ const Login = () => {
             NEXUS<span className="text-slate-800">.</span>
           </span>
           <h2 className="mt-3 text-2xl font-bold text-slate-900 tracking-tight">
-            Welcome back
+            Create an account
           </h2>
           <p className="mt-1.5 text-sm text-slate-500">
-            Please enter your details to sign in
+            Join us to start managing your personalized content
           </p>
         </div>
 
@@ -75,6 +69,23 @@ const Login = () => {
 
         {/* Form Container */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Username Input Field */}
+          <div>
+            <label htmlFor="username" className="block text-xs font-semibold text-slate-700 tracking-wider uppercase mb-2">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              value={input.username}
+              onChange={handleOnChange}
+              placeholder="johndoe"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200"
+            />
+          </div>
+
           {/* Email Input Field */}
           <div>
             <label htmlFor="email" className="block text-xs font-semibold text-slate-700 tracking-wider uppercase mb-2">
@@ -104,7 +115,7 @@ const Login = () => {
               required
               value={input.password}
               onChange={handleOnChange}
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200"
             />
           </div>
@@ -121,22 +132,22 @@ const Login = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Signing in...
+                Creating account...
               </>
             ) : (
-              "Sign In"
+              "Sign Up"
             )}
           </button>
         </form>
 
         {/* Dynamic Navigation Link */}
         <p className="mt-8 text-center text-sm text-slate-500">
-          Don't have an account?{" "}
+          Already have an account?{" "}
           <span
-            onClick={() => navigate("/signup")}
+            onClick={() => navigate("/login")}
             className="font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer underline underline-offset-4 decoration-indigo-200 hover:decoration-indigo-500 transition-colors"
           >
-            Create an account
+            Sign In
           </span>
         </p>
 
@@ -145,4 +156,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default SignUp;

@@ -1,146 +1,82 @@
-import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import {
-  FaGraduationCap,
-  FaBookOpen,
-  FaPhoneAlt,
-  FaInfoCircle,
-  FaUserCircle,
-  FaSignOutAlt,
-} from "react-icons/fa";
-
-import logoForNav from "../assets/logo.png";
+import axios from "axios";
+import { useState } from "react";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // 1. सबसे महत्वपूर्ण सुधार: स्टेट बनते समय ही localStorage से वैल्यू उठाएं
-  // इससे रीफ्रेश करने पर UI कभी भी फ्लिकर (झटका) नहीं मारेगा
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem("login") === "true";
-  });
-
-  // 2. अब आपको माउंट होने पर बार-बार चेक करने वाले useEffect की जरूरत नहीं है
-  // लेकिन अगर यूजर दूसरे टैब में लॉगआउट करता है, तो उसे सिंक में रखने के लिए यह इस्तेमाल कर सकते हैं
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsLoggedIn(localStorage.getItem("login") === "true");
-    };
-
-    // अन्य विंडोज/टैब में होने वाले बदलावों को ट्रैक करने के लिए (Optional पर बढ़िया प्रैक्टिस)
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
-  // लॉगआउट फंक्शन
-  const handleLogout = () => {
-    localStorage.removeItem("login");
-    setIsLoggedIn(false);
-    navigate("/login"); 
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await axios.post(
+        `${import.meta.env.VITE_API_URL || "http://localhost:3000/"}api/v1/logout`,
+        {},
+        { withCredentials: true }
+      );
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
-  const navItems = [
-    { name: "Home", path: "/", icon: <FaGraduationCap size={18} /> },
-    { name: "Courses", path: "/courses", icon: <FaBookOpen size={18} /> },
-    { name: "About", path: "/about", icon: <FaInfoCircle size={18} /> },
-    { name: "Contact", path: "/contact", icon: <FaPhoneAlt size={18} /> },
-  ];
+  const getProfile = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL || "http://localhost:3000/"}api/v1/profile`
+      );
+      console.log("Profile Data Successfully Retrieved:", response.data.user);
+      alert(`Logged in as: ${response.data.user?.username || "User"}`);
+    } catch (error) {
+      console.error("Profile Fetch Failed:", error.response?.data?.message || error.message);
+    }
+  };
+
+  // Active styles utility function for clean code
+  const linkStyles = ({ isActive }) =>
+    `text-sm font-semibold tracking-wide transition-colors duration-200 ${
+      isActive ? "text-indigo-600" : "text-slate-600 hover:text-slate-900"
+    }`;
 
   return (
-    <div className="fixed top-5 left-0 w-full z-50 flex justify-center">
-      <motion.div
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7 }}
-        className="w-[94%] max-w-7xl px-8 py-4 flex items-center justify-between rounded-3xl border border-white/10 bg-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.37)]"
-      >
-        {/* LOGO */}
-        <motion.div
-          whileHover={{ scale: 1.08, rotate: 2 }}
-          transition={{ type: "spring", stiffness: 250 }}
-          className="cursor-pointer"
-          onClick={() => navigate("/")}
-        >
-          <img
-            src={logoForNav}
-            className="w-[95px] object-contain drop-shadow-xl"
-            alt="logo"
-          />
-        </motion.div>
-
-        {/* NAV LINKS */}
-        <nav className="flex items-center gap-3">
-          {navItems.map((item, index) => (
-            <NavLink
-              key={index}
-              to={item.path}
-              className={({ isActive }) => `
-                relative flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 overflow-hidden
-                ${isActive ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30" : "text-gray-200 hover:bg-white/10 hover:text-white"}
-              `}
-            >
-              {item.icon}
-              {item.name}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* BUTTONS / PROFILE SECTION */}
-        <div className="flex items-center gap-4">
-          {isLoggedIn ? (
-            /* --- IF USER IS LOGGED IN SHOW PROFILE & LOGOUT --- */
-            <div className="flex items-center gap-5">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 text-gray-200 hover:text-blue-400 cursor-pointer transition-colors"
-                onClick={() => navigate("/profile")}
-              >
-                <FaUserCircle size={24} />
-                <span className="text-sm font-medium hidden sm:inline">Profile</span>
-              </motion.div>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-medium hover:bg-red-500 hover:text-white transition-all duration-300 text-sm"
-              >
-                <FaSignOutAlt size={14} />
-                Logout
-              </motion.button>
-            </div>
-          ) : (
-            /* --- IF USER IS NOT LOGGED IN SHOW LOGIN & GET STARTED --- */
-            <>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <NavLink
-                  to="/login"
-                  className="px-5 py-2.5 rounded-xl border border-blue-400 text-white font-medium hover:bg-blue-500 transition-all duration-300 text-sm"
-                >
-                  Login
-                </NavLink>
-              </motion.div>
-
-              <motion.div
-                whileHover={{
-                  scale: 1.08,
-                  boxShadow: "0px 0px 25px rgb(59 130 246)",
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <NavLink
-                  to="/login"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-semibold shadow-lg transition-all duration-300 text-sm"
-                >
-                  Get Started
-                </NavLink>
-              </motion.div>
-            </>
-          )}
+    <nav className="bg-white border-b border-slate-200 fixed top-0 left-0 w-full z-50 px-6 py-4 flex items-center justify-between shadow-sm font-sans antialiased">
+      {/* Brand Logo Section */}
+      <div className="flex items-center space-x-8">
+        <NavLink to="/product" className="text-xl font-black tracking-tight text-indigo-600">
+          NEXUS<span className="text-slate-800">.</span>
+        </NavLink>
+        
+        {/* Navigation Middle Links */}
+        <div className="hidden sm:flex space-x-6">
+          <NavLink to="/product" className={linkStyles}>
+            Create Post
+          </NavLink>
+          <NavLink to="/postlist" className={linkStyles}>
+            Your Feed
+          </NavLink>
         </div>
-      </motion.div>
-    </div>
+      </div>
+
+      {/* Operational Actions Section */}
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={getProfile}
+          className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+        >
+          Check Profile
+        </button>
+        
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="text-sm font-semibold bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 disabled:opacity-50 transition-all cursor-pointer"
+        >
+          {isLoggingOut ? "Leaving..." : "Logout"}
+        </button>
+      </div>
+    </nav>
   );
 };
 
